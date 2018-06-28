@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="css/main.css">
+
+    <script type="text/javascript">
+        
+        function saveNoteData() {
+            
+            var notesArray = [];//an array to store objects with the information of each note
+
+            //for each note content add a an object to the notesArray
+            document.querySelectorAll("div > .note-content").forEach(
+                function (e, i) {
+
+                //save the class attribute of the div, the content of textarea, the creation and edition date
+                var colorClass = e.parentElement.getAttribute("class");
+                var content = e.value;
+                var created = e.previousElementSibling.previousElementSibling.textContent;
+                var edited = e.previousElementSibling.textContent;
+
+                notesArray.push({ Index: i, Content: content, Class: colorClass, Creation: created, Edition: edited});
+                
+            });
+
+            //stringify the array
+            var jsonStr = JSON.stringify(notesArray);
+
+            // and store it in localStorage
+            localStorage.setItem("notes", jsonStr);
+
+        }
+//-----------------------------------------------------------------------------------------------------------------------------
+
+        function addEvent(div) {//add an event to the passed element, in this case the div
+            //get the textarea
+            var contTextarea = div.firstChild.nextSibling.nextSibling;
+            //set a keyup event to the text area
+            contTextarea.onkeyup = function() {
+                var lastEdition = "Last Edit: " + document.lastModified;//every time a key is up, set last edition date
+                contTextarea.previousElementSibling.textContent = lastEdition;
+
+                saveNoteData();//save the note info
+            };
+
+        }
+//-----------------------------------------------------------------------------------------------------------------------------
+
+        function addNote(className, creation, content, edition) {
+
+            if (!className) {//if theres no class in div set it and add it a random number 
+                className = "color" + Math.ceil(Math.random() * 3);//math.ceil a random number between the range [0-1)
+            }//zero included to 1 not included, multiplied by 3... in css we have .color1 .color2 and .color3 class selectors
+            
+            //here started to create the elements that note will contain
+            var creationDate = "Created: " + document.lastModified;//creation date var
+            var li = document.createElement("li");//li element that will contain the div note (notes are inside a <ul>)
+            var div = document.createElement("div");//the note body
+            var creat = document.createElement("p");//the p element that contains the creation date
+            var lastEd = document.createElement("p");//the p element that will contain last edition date
+            var cont = document.createElement("textarea");//text area where we will write
+            var close = document.createElement("img");//close button
+            var newNote = document.getElementById("notes");//select the ul were notes will be attached
+
+            newNote.appendChild(li);//append a <li> to <ul>
+            
+            li.appendChild(div);//append the note div inside the <li> that we just created
+            div.className = className;//add the note a className
+            
+            div.appendChild(creat);//append creation date <p>
+            creat.className = "creation";//set a classname to it
+            creat.insertAdjacentElement("afterend", lastEd)//insert creation date after last edition date
+            creat.nextSibling.className = "edition";//set a classname to it
+            
+            div.appendChild(cont);//append the textaarea to div
+            cont.className = "note-content";//set a className to it
+            cont.setAttribute("placeholder", "Enter your text here...");//set a placeholder text to textares
+
+            div.appendChild(close);//append close img to note div
+            close.setAttribute("src", "images/close.png");//set src attribute
+            
+            close.onclick = function () {//add event click to the close image
+                // remove the note
+                newNote.removeChild(close.parentNode.parentNode);
+                saveNoteData();//save the note data
+
+            };
+                        
+            addEvent(div);//add an evento to div
+            
+            // if theres not creation date, then set the creation date of the creationDate var
+            if (!creation) {
+                creat.textContent = creationDate;
+            }
+            //if theres not edition date, then set the content of lastEd to blank ""
+            if (!edition) {
+                creat.nextElementSibling.textContent = "";
+            }
+            
+
+            // if a creation date is provided then set the creation date of the note
+            if (creation) {
+                // set the creation date in the content of the p creation date element
+                div.firstElementChild.textContent = creation;
+            }
+            // if an edition date is provided then set the date of the note
+            if (edition) {
+                // set the edition date in the content of the p edition date element
+                div.firstElementChild.nextElementSibling.textContent = edition;
+            }
+
+            // if a content is provided then set the content of the new note
+            if (content) {
+                // get the content textarea element and set its value
+                div.firstElementChild.nextElementSibling.nextElementSibling.value = content;
+            }
+
+            // save the note data
+            saveNoteData();
+        }
+//-----------------------------------------------------------------------------------------------------------------------------
+
+        function loadNotes() {
+            //get the information from localStorage, look for the "notes" item that is an array with objects witht the notes info
+            var storedNotes = localStorage.getItem("notes");
+            //if theres stored information in "notes"
+            if (storedNotes) {
+                // parse the array and store it in the notesArray var
+                var notesArray = JSON.parse(storedNotes);
+                count = notesArray.length;//set count to the array length
+
+                var i;
+                for (i = 0; i < count; i++) {//iterate over the array
+                    var storedNotes = notesArray[i];
+                    //pass the information in the object at position i to the addnewnote function 
+                    //so we can create new notes that will hold that information
+                    addNote(storedNotes.Class, storedNotes.Creation, storedNotes.Content, storedNotes.Edition);
+                }
+            }
+
+        }
+//-----------------------------------------------------------------------------------------------------------------------------
+        //when the page load
+        window.onload = function () {
+            //get Add note button (image)
+            var button = document.getElementById("newNote");
+            
+            loadNotes();//load stored notes
+            
+            // set an event to the add button. On click add a new Note
+            button.onclick = function () {
+                addNote();
+            };
+
+        };
+
+    </script>
+
+</head>
+<body>
+
+    <div id="cont">
+        <img id="newNote" src="images/newnote.png"/>
+    </div>
+    
+    <ul id="notes"/>
+    
+</body>
+</html>
